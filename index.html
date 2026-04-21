@@ -725,15 +725,17 @@ async function handleForgot() {
   }
 }
 
-/* ── Check for existing session ── */
-(function checkSession() {
-  const token = localStorage.getItem('cm_token');
-  const user  = localStorage.getItem('cm_user');
-  if (token && user) {
-    const redirect = new URLSearchParams(location.search).get('redirect') || 'https://citymetro.xyz';
-    // Already signed in — redirect straight away
-    // Uncomment once your API is live:
-    // location.href = redirect + `?token=${token}`;
+/* ── Handle URL params on load ── */
+(function handleUrlParams() {
+  const params   = new URLSearchParams(location.search);
+  const verified = params.get('verified');
+  const token    = localStorage.getItem('cm_token');
+  const redirect = params.get('redirect') || 'https://citymetro.xyz';
+
+  // Already signed in — redirect back to app
+  if (token) {
+    location.href = redirect + (redirect.includes('?') ? '&' : '?') + `token=${token}`;
+    return;
   }
 })();
 </script>
