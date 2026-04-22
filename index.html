@@ -140,14 +140,15 @@ display:flex;align-items:center;gap:6px}
 footer{width:100%;text-align:center;padding:20px;font-size:11px;color:var(--muted2);
 line-height:1.8;border-top:1px solid var(--border);background:var(--surface);margin-top:auto}
 
-#panel-forgot,#panel-reset,#panel-code{display:none;padding:28px 32px 24px}
-#panel-forgot.active,#panel-reset.active,#panel-code.active{display:block}
+/* keep these for backward compatibility, but we now use .panel.active primarily */
+#panel-code,#panel-password,#panel-forgot{display:none}
+#panel-code.active,#panel-password.active,#panel-forgot.active{display:block}
 
 @media(max-width:480px){
 .card{border-radius:0;border-left:none;border-right:none;box-shadow:none}
 .main{padding:0;align-items:flex-start}
 .card-top{padding:28px 24px 22px}
-.panel,#panel-forgot,#panel-reset,#panel-code{padding:24px 24px 20px}
+.panel,#panel-forgot,#panel-reset,#panel-code,#panel-password{padding:24px 24px 20px}
 .name-row{grid-template-columns:1fr}
 .recaptcha-wrap{transform:scale(.85);transform-origin:left center}
 }
@@ -187,8 +188,8 @@ onkeydown="if(event.key==='Enter')checkEmail()"/>
 <button class="btn-primary" id="login-next-btn" onclick="checkEmail()">Continue</button>
 </div>
 
-<!-- CODE ENTRY PANEL (MFA / magic code) -->
-<div id="panel-code">
+<!-- CODE ENTRY PANEL -->
+<div class="panel" id="panel-code">
 <button class="back-btn" onclick="goBack()">← Back</button>
 <div class="alert" id="code-alert"></div>
 <div class="field">
@@ -203,10 +204,11 @@ onkeydown="if(event.key==='Enter')submitCode()" oninput="this.value=this.value.r
 <button class="btn-primary" id="code-btn" onclick="submitCode()">Verify Code</button>
 </div>
 
-<!-- PASSWORD ENTRY PANEL (regular users with password option) -->
-<div id="panel-password" style="display:none;padding:28px 32px 24px">
+<!-- PASSWORD ENTRY PANEL -->
+<div class="panel" id="panel-password">
 <button class="back-btn" onclick="goBack()">← Back</button>
 <div class="alert" id="pw-alert"></div>
+
 <div id="method-choice-wrap">
 <div class="method-choice">
 <button class="method-btn" onclick="chooseMethod('code')">
@@ -219,6 +221,7 @@ onkeydown="if(event.key==='Enter')submitCode()" oninput="this.value=this.value.r
 </button>
 </div>
 </div>
+
 <div id="pw-form" style="display:none">
 <div class="field">
 <label>Password</label>
@@ -228,10 +231,13 @@ onkeydown="if(event.key==='Enter')submitPassword()"/>
 <button class="pw-toggle" type="button" onclick="togglePw('login-password',this)">👁</button>
 </div>
 </div>
+
 <div class="forgot-link"><a onclick="showPanel('forgot')">Forgot password?</a></div>
+
 <div class="recaptcha-wrap">
 <div class="g-recaptcha" data-sitekey="6LccFMIsAAAAALZL82dtKSCPawrz6wZ6Kc4wvAqz" id="rc-login"></div>
 </div>
+
 <button class="btn-primary" id="pw-btn" onclick="submitPassword()">Sign In</button>
 <button class="btn-secondary" onclick="chooseMethod('code')">Send me a code instead</button>
 </div>
@@ -244,11 +250,14 @@ onkeydown="if(event.key==='Enter')submitPassword()"/>
 <div class="field"><label>First Name</label><input type="text" id="su-first" placeholder="Felix" autocomplete="given-name"/></div>
 <div class="field"><label>Last Name</label><input type="text" id="su-last" placeholder="Smith" autocomplete="family-name"/></div>
 </div>
+
 <div class="field"><label>Email Address</label><input type="email" id="su-email" placeholder="you@example.com" autocomplete="email"/></div>
+
 <div class="field">
 <label>Password</label>
 <div class="pw-wrap">
-<input type="password" id="su-pw" placeholder="Min. 8 characters" autocomplete="new-password" oninput="checkStrength(this.value)"/>
+<input type="password" id="su-pw" placeholder="Min. 8 characters" autocomplete="new-password"
+oninput="checkStrength(this.value)"/>
 <button class="pw-toggle" type="button" onclick="togglePw('su-pw',this)">👁</button>
 </div>
 <div class="pw-strength" id="pw-strength">
@@ -256,6 +265,7 @@ onkeydown="if(event.key==='Enter')submitPassword()"/>
 <div class="pw-lbl" id="pw-lbl"></div>
 </div>
 </div>
+
 <div class="field">
 <label>Confirm Password</label>
 <div class="pw-wrap">
@@ -263,16 +273,25 @@ onkeydown="if(event.key==='Enter')submitPassword()"/>
 <button class="pw-toggle" type="button" onclick="togglePw('su-confirm',this)">👁</button>
 </div>
 </div>
+
 <div class="recaptcha-wrap">
 <div class="g-recaptcha" data-sitekey="6LccFMIsAAAAALZL82dtKSCPawrz6wZ6Kc4wvAqz" id="rc-signup"></div>
 </div>
+
 <button class="btn-primary" id="signup-btn" onclick="handleSignup()">Create Account</button>
-<div class="terms-text">By creating an account you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</div>
+
+<div class="terms-text">
+By creating an account you agree to the
+<a href="#">Terms of Service</a>
+and
+<a href="#">Privacy Policy</a>.
+</div>
+
 <div class="form-link">Already have an account? <a onclick="showPanel('login')">Sign in</a></div>
 </div>
 
 <!-- FORGOT PASSWORD PANEL -->
-<div id="panel-forgot">
+<div class="panel" id="panel-forgot">
 <button class="back-btn" onclick="showPanel('login')">← Back to Sign In</button>
 <div class="alert" id="forgot-alert"></div>
 <div class="field">
@@ -291,296 +310,424 @@ An official site of the Republic States Government.
 </footer>
 
 <script>
+/** ====== CONFIG ====== **/
 const API = 'https://citymetrosso.felixfeger46.workers.dev';
-const LOGO = + LOGO_PLACEHOLDER + ;
-document.getElementById('topbar-logo').src = LOGO;
-document.getElementById('card-logo').src = LOGO;
 
+/**
+ * IMPORTANT:
+ * Your original file had: const LOGO = + LOGO_PLACEHOLDER + ;
+ * That breaks JS parsing entirely, which is why onclick handlers weren't working.
+ * This is a safe fallback logo so the script always loads.
+ */
+const LOGO = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#003f8a"/>
+      <stop offset="1" stop-color="#1558b0"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="28" fill="url(#g)"/>
+  <path d="M18 34c0-9 7-16 14-16s14 7 14 16c0 7-4 13-10 15l-1-6c4-2 6-6 6-9 0-6-4-10-9-10s-9 4-9 10c0 3 2 7 6 9l-1 6c-6-2-10-8-10-15z" fill="white" opacity="0.95"/>
+</svg>
+`);
+
+const topLogo = document.getElementById('topbar-logo');
+const cardLogo = document.getElementById('card-logo');
+if (topLogo) topLogo.src = LOGO;
+if (cardLogo) cardLogo.src = LOGO;
+
+/** ====== STATE ====== **/
 let currentEmail = '';
 let isAdmin = false;
 let currentMethod = '';
 
-/* ══ PANEL MANAGEMENT ══ */
-function showPanel(name) {
-// Hide all variable panels
-['login','signup','forgot'].forEach(p => {
-document.getElementById('panel-'+p)?.classList.remove('active');
-});
-['panel-code','panel-password'].forEach(id => {
-const el = document.getElementById(id);
-if (el) el.style.display = 'none';
-});
-document.getElementById('tab-row').style.display = ['login','signup'].includes(name) ? 'flex' : 'none';
-
-if (name === 'login' || name === 'signup') {
-document.getElementById('panel-'+name).classList.add('active');
-document.getElementById('tab-'+name)?.classList.add('active');
-['tab-login','tab-signup'].forEach(t => document.getElementById(t)?.classList.remove('active'));
-document.getElementById('tab-'+name)?.classList.add('active');
-} else if (name === 'forgot') {
-document.getElementById('panel-forgot').classList.add('active');
-} else if (name === 'code') {
-document.getElementById('panel-code').style.display = 'block';
-setTimeout(() => document.getElementById('code-input')?.focus(), 100);
-} else if (name === 'password') {
-document.getElementById('panel-password').style.display = 'block';
+/** ====== PANEL MANAGEMENT ====== **/
+function clearAlerts() {
+  document.querySelectorAll('.alert').forEach(a => a.className = 'alert');
 }
-clearAlerts();
+
+function showPanel(name) {
+  // Hide panels
+  document.getElementById('panel-login')?.classList.remove('active');
+  document.getElementById('panel-signup')?.classList.remove('active');
+  document.getElementById('panel-forgot')?.classList.remove('active');
+  document.getElementById('panel-code')?.classList.remove('active');
+  document.getElementById('panel-password')?.classList.remove('active');
+
+  // Tabs visible only on login/signup
+  const tabRow = document.getElementById('tab-row');
+  if (tabRow) tabRow.style.display = ['login','signup'].includes(name) ? 'flex' : 'none';
+
+  // Active tab styling
+  document.getElementById('tab-login')?.classList.remove('active');
+  document.getElementById('tab-signup')?.classList.remove('active');
+
+  if (name === 'login') {
+    document.getElementById('panel-login')?.classList.add('active');
+    document.getElementById('tab-login')?.classList.add('active');
+    clearAlerts();
+    return;
+  }
+  if (name === 'signup') {
+    document.getElementById('panel-signup')?.classList.add('active');
+    document.getElementById('tab-signup')?.classList.add('active');
+    clearAlerts();
+    return;
+  }
+  if (name === 'forgot') {
+    document.getElementById('panel-forgot')?.classList.add('active');
+    clearAlerts();
+    return;
+  }
+  if (name === 'code') {
+    document.getElementById('panel-code')?.classList.add('active');
+    document.getElementById('code-input')?.focus?.();
+    clearAlerts();
+    return;
+  }
+  if (name === 'password') {
+    document.getElementById('panel-password')?.classList.add('active');
+    document.getElementById('login-password')?.focus?.();
+    clearAlerts();
+    return;
+  }
 }
 
 function goBack() {
-currentMethod = '';
-document.getElementById('method-choice-wrap').style.display = 'block';
-document.getElementById('pw-form').style.display = 'none';
-showPanel('login');
-document.getElementById('login-email').value = currentEmail;
+  currentMethod = '';
+  const methodWrap = document.getElementById('method-choice-wrap');
+  const pwForm = document.getElementById('pw-form');
+  if (methodWrap) methodWrap.style.display = 'block';
+  if (pwForm) pwForm.style.display = 'none';
+  showPanel('login');
+  const emailInp = document.getElementById('login-email');
+  if (emailInp) emailInp.value = currentEmail;
 }
 
-/* ══ STEP 1: Check email ══ */
+/** ====== HELPERS ====== **/
+function showAlert(id, msg, type='error') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'alert ' + type;
+}
+
+function togglePw(id, btn) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  if (btn) btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+function checkStrength(val) {
+  const wrap = document.getElementById('pw-strength');
+  const fill = document.getElementById('pw-fill');
+  const lbl = document.getElementById('pw-lbl');
+
+  if (!wrap || !fill || !lbl) return;
+
+  wrap.style.display = val ? 'block' : 'none';
+
+  let s = 0;
+  if (val.length >= 8) s++;
+  if (/[A-Z]/.test(val)) s++;
+  if (/[0-9]/.test(val)) s++;
+  if (/[^A-Za-z0-9]/.test(val)) s++;
+
+  const lv = [
+    {pct:'20%',color:'#ef4444',label:'Weak'},
+    {pct:'50%',color:'#f97316',label:'Fair'},
+    {pct:'75%',color:'#eab308',label:'Good'},
+    {pct:'100%',color:'#22c55e',label:'Strong'},
+  ][Math.max(0,s-1)];
+
+  fill.style.width = lv.pct;
+  fill.style.background = lv.color;
+  lbl.textContent = lv.label;
+  lbl.style.color = lv.color;
+}
+
+/** ====== AUTH FLOW ====== **/
 async function checkEmail() {
-const email = document.getElementById('login-email').value.trim();
-if (!email || !email.includes('@')) return showAlert('login-alert','Enter a valid email address.');
-currentEmail = email;
+  const emailEl = document.getElementById('login-email');
+  const email = (emailEl?.value || '').trim();
 
-const btn = document.getElementById('login-next-btn');
-btn.classList.add('loading'); btn.disabled = true;
+  if (!email || !email.includes('@')) {
+    showAlert('login-alert','Enter a valid email address.');
+    return;
+  }
+  currentEmail = email;
 
-try {
-const res = await fetch(API+'/auth/send-code', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ email })
-});
-const data = await res.json();
+  const btn = document.getElementById('login-next-btn');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
 
-isAdmin = data.admin === true;
+  try {
+    const res = await fetch(API+'/auth/send-code', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    const data = await res.json();
 
-if (isAdmin) {
-// Admin: go straight to code entry
-document.getElementById('code-label').textContent = 'Admin sign-in code sent to your email';
-showPanel('code');
-} else {
-// Regular user: show method choice
-showPanel('password');
+    isAdmin = data && data.admin === true;
+
+    if (isAdmin) {
+      document.getElementById('code-label').textContent = 'Admin sign-in code sent to your email';
+      showPanel('code');
+    } else {
+      showPanel('password');
+    }
+  } catch {
+    showAlert('login-alert','Could not reach server. Try again.');
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  }
 }
-} catch {
-showAlert('login-alert','Could not reach server. Try again.');
-} finally {
-btn.classList.remove('loading'); btn.disabled = false;
-}
-}
 
-/* ══ Method choice for regular users ══ */
 async function chooseMethod(method) {
-currentMethod = method;
-if (method === 'code') {
-// Send code (already sent in checkEmail for admin, resend for user)
-try {
-await fetch(API+'/auth/send-code', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ email: currentEmail })
-});
-} catch {}
-document.getElementById('code-label').textContent = 'Enter the 6-digit code sent to your email';
-showPanel('code');
-} else {
-// Show password form
-document.getElementById('method-choice-wrap').style.display = 'none';
-document.getElementById('pw-form').style.display = 'block';
-setTimeout(() => document.getElementById('login-password')?.focus(), 100);
-}
+  currentMethod = method;
+
+  if (method === 'code') {
+    // For regular users, resend or send code
+    try {
+      await fetch(API+'/auth/send-code', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email: currentEmail })
+      });
+    } catch {}
+    const lbl = document.getElementById('code-label');
+    if (lbl) lbl.textContent = 'Enter the 6-digit code sent to your email';
+    showPanel('code');
+  } else {
+    const methodWrap = document.getElementById('method-choice-wrap');
+    const pwForm = document.getElementById('pw-form');
+    if (methodWrap) methodWrap.style.display = 'none';
+    if (pwForm) pwForm.style.display = 'block';
+    setTimeout(() => document.getElementById('login-password')?.focus?.(), 100);
+  }
 }
 
 async function resendCode() {
-try {
-await fetch(API+'/auth/send-code', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ email: currentEmail })
-});
-showAlert('code-alert','New code sent! Check your inbox.','info');
-} catch {
-showAlert('code-alert','Failed to resend. Try again.');
-}
+  try {
+    await fetch(API+'/auth/send-code', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: currentEmail })
+    });
+    showAlert('code-alert','New code sent! Check your inbox.','info');
+  } catch {
+    showAlert('code-alert','Failed to resend. Try again.');
+  }
 }
 
-/* ══ STEP 2a: Submit code ══ */
 async function submitCode() {
-const code = document.getElementById('code-input').value.trim();
-if (code.length !== 6) return showAlert('code-alert','Enter the full 6-digit code.');
+  const codeEl = document.getElementById('code-input');
+  const code = (codeEl?.value || '').trim();
 
-const btn = document.getElementById('code-btn');
-btn.classList.add('loading'); btn.disabled = true;
+  if (code.length !== 6) {
+    showAlert('code-alert','Enter the full 6-digit code.');
+    return;
+  }
 
-try {
-const res = await fetch(API+'/auth/verify-code', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ email: currentEmail, code })
-});
-const data = await res.json();
-if (!res.ok) throw new Error(data.error || 'Verification failed');
-handleSuccess(data);
-} catch(err) {
-showAlert('code-alert', err.message);
-} finally {
-btn.classList.remove('loading'); btn.disabled = false;
+  const btn = document.getElementById('code-btn');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+
+  try {
+    const res = await fetch(API+'/auth/verify-code', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: currentEmail, code })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error((data && data.error) || 'Verification failed');
+    handleSuccess(data);
+  } catch(err) {
+    showAlert('code-alert', err.message || 'Verification failed');
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  }
 }
-}
 
-/* ══ STEP 2b: Submit password ══ */
 async function submitPassword() {
-const password = document.getElementById('login-password').value;
-if (!password) return showAlert('pw-alert','Enter your password.');
+  const pwEl = document.getElementById('login-password');
+  const password = pwEl?.value || '';
+  if (!password) {
+    showAlert('pw-alert','Enter your password.');
+    return;
+  }
 
-const captcha = grecaptcha.getResponse(0);
-if (!captcha) return showAlert('pw-alert','Please complete the reCAPTCHA.');
+  if (typeof grecaptcha === 'undefined') {
+    showAlert('pw-alert','reCAPTCHA not loaded yet. Please wait and try again.');
+    return;
+  }
 
-const btn = document.getElementById('pw-btn');
-btn.classList.add('loading'); btn.disabled = true;
+  const captcha = grecaptcha.getResponse(0);
+  if (!captcha) {
+    showAlert('pw-alert','Please complete the reCAPTCHA.');
+    return;
+  }
 
-try {
-const res = await fetch(API+'/auth/login', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ email: currentEmail, password, captcha })
-});
-const data = await res.json();
-if (!res.ok) throw new Error(data.error || 'Login failed');
-handleSuccess(data);
-} catch(err) {
-showAlert('pw-alert', err.message);
-if (typeof grecaptcha !== 'undefined') grecaptcha.reset(0);
-} finally {
-btn.classList.remove('loading'); btn.disabled = false;
+  const btn = document.getElementById('pw-btn');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+
+  try {
+    const res = await fetch(API+'/auth/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email: currentEmail, password, captcha })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error((data && data.error) || 'Login failed');
+    handleSuccess(data);
+  } catch(err) {
+    showAlert('pw-alert', err.message || 'Login failed');
+    try { grecaptcha.reset(0); } catch {}
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  }
 }
-}
 
-/* ══ Handle successful auth ══ */
 function handleSuccess(data) {
-localStorage.setItem('cm_token', data.token);
-localStorage.setItem('cm_user', JSON.stringify(data.user));
-const redirect = new URLSearchParams(location.search).get('redirect') || 'https://citymetro.xyz';
-const sep = redirect.includes('?') ? '&' : '?';
-location.href = redirect + sep + 'token=' + data.token;
+  // Keep original behavior (redirect)
+  try {
+    localStorage.setItem('cm_token', data.token);
+    localStorage.setItem('cm_user', JSON.stringify(data.user));
+  } catch {}
+
+  const redirectParam = new URLSearchParams(location.search).get('redirect');
+  const redirect = redirectParam || 'https://citymetro.xyz';
+  const sep = redirect.includes('?') ? '&' : '?';
+  location.href = redirect + sep + 'token=' + data.token;
 }
 
-/* ══ SIGNUP ══ */
 async function handleSignup() {
-clearAlerts();
-const first = document.getElementById('su-first').value.trim();
-const last = document.getElementById('su-last').value.trim();
-const email = document.getElementById('su-email').value.trim();
-const pw = document.getElementById('su-pw').value;
-const confirm = document.getElementById('su-confirm').value;
+  clearAlerts();
 
-if (!first || !last) return showAlert('signup-alert','Enter your full name.');
-if (!email || !email.includes('@')) return showAlert('signup-alert','Enter a valid email address.');
-if (pw.length < 8) return showAlert('signup-alert','Password must be at least 8 characters.');
-if (pw !== confirm) return showAlert('signup-alert','Passwords do not match.');
+  const first = document.getElementById('su-first').value.trim();
+  const last = document.getElementById('su-last').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const pw = document.getElementById('su-pw').value;
+  const confirm = document.getElementById('su-confirm').value;
 
-const captcha = grecaptcha.getResponse(1);
-if (!captcha) return showAlert('signup-alert','Please complete the reCAPTCHA.');
+  if (!first || !last) return showAlert('signup-alert','Enter your full name.');
+  if (!email || !email.includes('@')) return showAlert('signup-alert','Enter a valid email address.');
+  if (pw.length < 8) return showAlert('signup-alert','Password must be at least 8 characters.');
+  if (pw !== confirm) return showAlert('signup-alert','Passwords do not match.');
 
-const btn = document.getElementById('signup-btn');
-btn.classList.add('loading'); btn.disabled = true;
+  if (typeof grecaptcha === 'undefined') {
+    return showAlert('signup-alert','reCAPTCHA not loaded yet. Please wait and try again.');
+  }
 
-try {
-const res = await fetch(API+'/auth/signup', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ firstName:first, lastName:last, email, password:pw, captcha })
-});
-const data = await res.json();
-if (!res.ok) throw new Error(data.error || 'Sign up failed');
-showAlert('signup-alert','✓ Account created! Check your email to verify before signing in.','success');
-btn.textContent = 'Check Your Email';
-if (typeof grecaptcha !== 'undefined') grecaptcha.reset(1);
-} catch(err) {
-showAlert('signup-alert', err.message);
-if (typeof grecaptcha !== 'undefined') grecaptcha.reset(1);
-} finally {
-btn.classList.remove('loading'); btn.disabled = false;
+  const captcha = grecaptcha.getResponse(1);
+  if (!captcha) return showAlert('signup-alert','Please complete the reCAPTCHA.');
+
+  const btn = document.getElementById('signup-btn');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+
+  try {
+    const res = await fetch(API+'/auth/signup', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        firstName:first,
+        lastName:last,
+        email,
+        password:pw,
+        captcha
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error((data && data.error) || 'Sign up failed');
+
+    showAlert('signup-alert','✓ Account created! Check your email to verify before signing in.','success');
+    if (btn) btn.textContent = 'Check Your Email';
+
+    try { grecaptcha.reset(1); } catch {}
+  } catch(err) {
+    showAlert('signup-alert', err.message || 'Sign up failed');
+    try { grecaptcha.reset(1); } catch {}
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  }
 }
-}
 
-/* ══ FORGOT PASSWORD ══ */
 async function handleForgot() {
-const email = document.getElementById('forgot-email').value.trim();
-if (!email || !email.includes('@')) return showAlert('forgot-alert','Enter a valid email.');
-const btn = document.getElementById('forgot-btn');
-btn.classList.add('loading'); btn.disabled = true;
-try {
-const res = await fetch(API+'/auth/forgot-password', {
-method:'POST', headers:{'Content-Type':'application/json'},
-body: JSON.stringify({ email })
-});
-await res.json();
-showAlert('forgot-alert','✓ If that email exists, a reset link has been sent.','success');
-} catch {
-showAlert('forgot-alert','Could not send reset email. Try again.');
-} finally {
-btn.classList.remove('loading'); btn.disabled = false;
-}
+  const emailEl = document.getElementById('forgot-email');
+  const email = (emailEl?.value || '').trim();
+
+  if (!email || !email.includes('@')) {
+    showAlert('forgot-alert','Enter a valid email.');
+    return;
+  }
+
+  const btn = document.getElementById('forgot-btn');
+  if (btn) { btn.classList.add('loading'); btn.disabled = true; }
+
+  try {
+    const res = await fetch(API+'/auth/forgot-password', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+
+    // ignore response body
+    await res.json().catch(()=>{});
+    showAlert('forgot-alert','✓ If that email exists, a reset link has been sent.','success');
+  } catch {
+    showAlert('forgot-alert','Could not send reset email. Try again.');
+  } finally {
+    if (btn) { btn.classList.remove('loading'); btn.disabled = false; }
+  }
 }
 
-/* ══ HELPERS ══ */
-function showAlert(id, msg, type='error') {
-const el = document.getElementById(id);
-if (!el) return;
-el.textContent = msg;
-el.className = 'alert ' + type;
-}
-function clearAlerts() {
-document.querySelectorAll('.alert').forEach(a => a.className = 'alert');
-}
-function togglePw(id, btn) {
-const inp = document.getElementById(id);
-inp.type = inp.type === 'password' ? 'text' : 'password';
-btn.textContent = inp.type === 'password' ? '👁' : '🙈';
-}
-function checkStrength(val) {
-const wrap = document.getElementById('pw-strength');
-const fill = document.getElementById('pw-fill');
-const lbl = document.getElementById('pw-lbl');
-wrap.style.display = val ? 'block' : 'none';
-let s = 0;
-if (val.length >= 8) s++;
-if (/[A-Z]/.test(val)) s++;
-if (/[0-9]/.test(val)) s++;
-if (/[^A-Za-z0-9]/.test(val)) s++;
-const lv = [
-{pct:'20%',color:'#ef4444',label:'Weak'},
-{pct:'50%',color:'#f97316',label:'Fair'},
-{pct:'75%',color:'#eab308',label:'Good'},
-{pct:'100%',color:'#22c55e',label:'Strong'},
-][Math.max(0,s-1)];
-fill.style.width = lv.pct;
-fill.style.background = lv.color;
-lbl.textContent = lv.label;
-lbl.style.color = lv.color;
-}
-function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-
-/* ══ CHECK EXISTING SESSION (validate with API first) ══ */
+/** ====== INIT SESSION CHECK ====== **/
 (async function init() {
-const storedToken = localStorage.getItem('cm_token');
-const redirect = new URLSearchParams(location.search).get('redirect');
+  const storedToken = localStorage.getItem('cm_token');
+  const redirect = new URLSearchParams(location.search).get('redirect');
 
-if (storedToken && redirect) {
-// Validate token is still good before auto-redirecting
-try {
-const res = await fetch(API+'/auth/me', {
-headers:{ 'Authorization': 'Bearer '+storedToken }
-});
-if (res.ok) {
-const user = await res.json();
-localStorage.setItem('cm_user', JSON.stringify(user));
-const sep = redirect.includes('?') ? '&' : '?';
-location.href = redirect + sep + 'token=' + storedToken;
-return;
-}
-} catch {}
-// Token invalid — clear it and show login
-localStorage.removeItem('cm_token');
-localStorage.removeItem('cm_user');
-}
+  if (storedToken && redirect) {
+    try {
+      const res = await fetch(API+'/auth/me', {
+        headers:{ 'Authorization': 'Bearer '+storedToken }
+      });
+
+      if (res.ok) {
+        const user = await res.json();
+        localStorage.setItem('cm_user', JSON.stringify(user));
+        const sep = redirect.includes('?') ? '&' : '?';
+        location.href = redirect + sep + 'token=' + storedToken;
+        return;
+      }
+    } catch {}
+    localStorage.removeItem('cm_token');
+    localStorage.removeItem('cm_user');
+  }
 })();
+
+/**
+ * IMPORTANT:
+ * Your HTML uses inline onclick="checkEmail()" etc.
+ * These functions must exist on window scope.
+ * This file already defines them in the global script scope,
+ * but if bundlers ever wrap it, you can uncomment the lines below:
+ */
+// window.showPanel = showPanel;
+// window.checkEmail = checkEmail;
+// window.goBack = goBack;
+// window.chooseMethod = chooseMethod;
+// window.resendCode = resendCode;
+// window.submitCode = submitCode;
+// window.submitPassword = submitPassword;
+// window.handleSignup = handleSignup;
+// window.handleForgot = handleForgot;
+// window.togglePw = togglePw;
+// window.checkStrength = checkStrength;
+
 </script>
 </body>
 </html>
