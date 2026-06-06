@@ -126,10 +126,45 @@ async function run() {
     return;
   }
 
-  // Token in URL — redirect the browser directly to the worker
-  // The worker verifies in DB then sends browser to ?success=1
+  // Token in URL — call the API directly via fetch (no navigation needed)
   if (token) {
-    window.location.href = `${API}/auth/verify-email?token=${encodeURIComponent(token)}`;
+    try {
+      const res  = await fetch(`${API}/auth/verify-email?token=${encodeURIComponent(token)}`);
+      spinner.style.display = 'none';
+      content.style.display = 'block';
+
+      if (res.ok || res.redirected) {
+        // Success — worker marked as verified
+        content.innerHTML = `
+          <div class="icon">✅</div>
+          <h2>Email Verified!</h2>
+          <p>Your City Metro account is now fully active. You can sign in and access all services.</p>
+          <a href="https://sso.citymetro.xyz" class="btn">Sign In Now</a>
+        `;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        const msg  = data.error || 'This link is invalid or has already been used.';
+        const isExpired = msg.toLowerCase().includes('expired');
+        content.innerHTML = `
+          <div class="icon">❌</div>
+          <h2>Verification Failed</h2>
+          <p>${isExpired
+            ? 'This verification link has expired. Please sign up again to receive a new link.'
+            : msg
+          }</p>
+          <a href="https://sso.citymetro.xyz" class="btn">Back to Sign In</a>
+        `;
+      }
+    } catch {
+      spinner.style.display = 'none';
+      content.style.display = 'block';
+      content.innerHTML = `
+        <div class="icon">⚠️</div>
+        <h2>Something Went Wrong</h2>
+        <p>Could not reach the server. Please try again or contact support at hello@citymetro.xyz.</p>
+        <a href="https://sso.citymetro.xyz" class="btn">Back to Sign In</a>
+      `;
+    }
     return;
   }
 
@@ -148,4 +183,3 @@ run();
 </script>
 </body>
 </html>
- 
